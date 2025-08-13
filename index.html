@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Учёт продукции</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1976d2">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+</head>
+<body>
+  <header>
+    <h1>📦 Учёт продукции</h1>
+    <div id="month-total">0 ₽</div>
+    <div id="sync-status">Готов к работе</div>
+  </header>
+
+  <main>
+    <!-- Добавление записи -->
+    <section id="add-section">
+      <h2>Добавить запись</h2>
+      <label>Товар:</label>
+      <select id="product-select">
+        <option value="">Выберите товар</option>
+      </select>
+      
+      <label>Количество:</label>
+      <input type="number" id="qty-input" step="0.1" min="0.1" placeholder="1.0">
+      
+      <button id="add-btn">Добавить</button>
+      
+      <h3>Сегодня</h3>
+      <ul id="today-list"></ul>
+    </section>
+
+    <!-- Товары -->
+    <section id="products-section" hidden>
+      <h2>Управление товарами</h2>
+      
+      <label>Название:</label>
+      <input type="text" id="new-name" placeholder="Название товара">
+      
+      <label>Цена за единицу:</label>
+      <input type="number" id="new-price" step="0.01" min="0.01" placeholder="100.00">
+      
+      <button id="add-product-btn">Добавить товар</button>
+      
+      <h3>Список товаров</h3>
+      <ul id="product-list"></ul>
+    </section>
+
+    <!-- Отчёты -->
+    <section id="reports-section" hidden>
+      <h2>Отчёты</h2>
+      
+      <div class="stats-card">
+        <h3>Статистика за текущий месяц</h3>
+        <div class="stat-item">
+          <span>Общая сумма:</span>
+          <span id="month-sum">0 ₽</span>
+        </div>
+        <div class="stat-item">
+          <span>Количество записей:</span>
+          <span id="month-count">0</span>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h3>Последние 10 записей</h3>
+        <ul id="recent-list"></ul>
+      </div>
+    </section>
+
+    <!-- Настройки -->
+    <section id="settings-section" hidden>
+      <h2>Настройки</h2>
+      
+      <div class="stats-card">
+        <h3>Данные приложения</h3>
+        <div class="stat-item">
+          <span>Всего товаров:</span>
+          <span id="total-products">0</span>
+        </div>
+        <div class="stat-item">
+          <span>Всего записей:</span>
+          <span id="total-entries">0</span>
+        </div>
+      </div>
+
+      <button id="export-btn">Экспорт данных JSON</button>
+      <button id="clear-data-btn">Очистить все данные</button>
+    </section>
+  </main>
+
+  <nav>
+    <button data-page="add-section" data-active>📝</button>
+    <button data-page="products-section">📦</button>
+    <button data-page="reports-section">📊</button>
+    <button data-page="settings-section">⚙️</button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
