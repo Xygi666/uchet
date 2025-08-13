@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#1976d2">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <header>
@@ -20,16 +21,24 @@
     <!-- Добавление записи -->
     <section id="add-section">
       <h2>Добавить запись</h2>
+
       <label>Товар:</label>
       <select id="product-select">
         <option value="">Выберите товар</option>
       </select>
-      
+
       <label>Количество:</label>
-      <input type="number" id="qty-input" step="0.1" min="0.1" placeholder="1.0">
-      
+      <input type="number" id="qty-input" min="0" step="0.1" placeholder="1.0">
+      <div id="qty-quick-btns" style="display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0;"></div>
+      <button type="button" id="voice-btn">🎤 Голосовой ввод количества</button>
+
+      <label>Комментарий:</label>
+      <input type="text" id="comment-input" autocomplete="off" placeholder="Комментарий (необязательно)">
+      <div id="comment-suggest" style="position:relative;"></div>
+
       <button id="add-btn">Добавить</button>
-      
+      <button id="add-shift-btn" type="button">Добавить смену (8 ч.)</button>
+
       <h3>Сегодня</h3>
       <ul id="today-list"></ul>
     </section>
@@ -37,15 +46,11 @@
     <!-- Товары -->
     <section id="products-section" hidden>
       <h2>Управление товарами</h2>
-      
       <label>Название:</label>
       <input type="text" id="new-name" placeholder="Название товара">
-      
       <label>Цена за единицу:</label>
       <input type="number" id="new-price" step="0.01" min="0.01" placeholder="100.00">
-      
       <button id="add-product-btn">Добавить товар</button>
-      
       <h3>Список товаров</h3>
       <ul id="product-list"></ul>
     </section>
@@ -53,17 +58,34 @@
     <!-- Отчёты -->
     <section id="reports-section" hidden>
       <h2>Отчёты</h2>
-      
+
       <div class="stats-card">
         <h3>Статистика за текущий месяц</h3>
-        <div class="stat-item">
-          <span>Общая сумма:</span>
-          <span id="month-sum">0 ₽</span>
-        </div>
-        <div class="stat-item">
-          <span>Количество записей:</span>
-          <span id="month-count">0</span>
-        </div>
+        <div class="stat-item"><span>Общая сумма:</span><span id="month-sum">0 ₽</span></div>
+        <div class="stat-item"><span>Количество записей:</span><span id="month-count">0</span></div>
+      </div>
+
+      <div class="stats-card">
+        <h3>Зарплата за месяц</h3>
+        <div class="stat-item"><span>Сумма сделки:</span><span id="month-sum">0 ₽</span></div>
+        <div class="stat-item"><span>Оклад:</span><span id="salary-sum">0 ₽</span></div>
+        <div class="stat-item"><span>Аванс:</span><span id="advance-sum">0 ₽</span></div>
+        <div class="stat-item"><span>Сумма налога:</span><span id="tax-sum">0 ₽</span></div>
+        <div class="stat-item"><span>Процент налога:</span><span id="tax-pct">13%</span></div>
+        <div class="stat-item"><b>Итого на руки:</b><span id="netto-sum">0 ₽</span></div>
+      </div>
+
+      <div class="stats-card">
+        <h3>Учёт смен/часов</h3>
+        <div class="stat-item"><span>Смен отработано:</span><span id="shifts-count">0</span></div>
+        <div class="stat-item"><span>Часов всего:</span><span id="shifts-hours">0</span></div>
+        <div class="stat-item"><span>Среднее за смену:</span><span id="shifts-avg">0 ₽</span></div>
+        <div class="stat-item"><span>Среднее за час:</span><span id="hour-avg">0 ₽</span></div>
+      </div>
+
+      <div class="stats-card">
+        <h3>График производительности</h3>
+        <canvas id="product-chart" height="220"></canvas>
       </div>
 
       <div class="stats-card">
@@ -75,21 +97,73 @@
     <!-- Настройки -->
     <section id="settings-section" hidden>
       <h2>Настройки</h2>
-      
+
       <div class="stats-card">
         <h3>Данные приложения</h3>
-        <div class="stat-item">
-          <span>Всего товаров:</span>
-          <span id="total-products">0</span>
-        </div>
-        <div class="stat-item">
-          <span>Всего записей:</span>
-          <span id="total-entries">0</span>
-        </div>
+        <div class="stat-item"><span>Всего товаров:</span><span id="total-products">0</span></div>
+        <div class="stat-item"><span>Всего записей:</span><span id="total-entries">0</span></div>
       </div>
 
-      <button id="export-btn">Экспорт данных JSON</button>
+      <h3>Выгрузка данных</h3>
+      <button id="export-btn">Экспорт в JSON</button>
+      <button id="export-csv-btn">Выгрузить в CSV (Excel)</button>
+      
+      <label for="export-period">Период:</label>
+      <select id="export-period">
+        <option value="today">Сегодня</option>
+        <option value="week">Неделя (с понедельника)</option>
+        <option value="month">Текущий месяц</option>
+        <option value="year">Год</option>
+        <option value="custom">Задать период</option>
+      </select>
+      <div id="custom-period" style="display: none; margin-top: 8px;">
+        <input type="date" id="date-from"> —
+        <input type="date" id="date-to">
+      </div>
+      <button id="export-html-btn">Выгрузить в таблицу (HTML)</button>
+      
       <button id="clear-data-btn">Очистить все данные</button>
+
+      <h3>Персонализация</h3>
+      <label><input type="checkbox" id="show-add" checked> Показать "Добавить запись"</label><br>
+      <label><input type="checkbox" id="show-products" checked> Показать "Товары"</label><br>
+      <label><input type="checkbox" id="show-reports" checked> Показать "Отчёты"</label><br>
+      <label><input type="checkbox" id="show-settings" checked> Показать "Настройки"</label><br>
+      <button id="save-ui-prefs-btn">Сохранить интерфейс</button>
+
+      <label><input type="checkbox" id="one-hand-mode"> Режим для одной руки</label>
+      <button id="save-one-hand-btn">Сохранить режим</button>
+
+      <h3>Быстрые значения количества</h3>
+      <input type="text" id="qty-presets" placeholder="10,20,50,100,200">
+      <small>Введите значения через запятую: 10,20,50...</small>
+      <button id="save-qty-presets-btn">Сохранить значения</button>
+
+      <h3>Оформление</h3>
+      <label>Тема оформления:</label>
+      <select id="theme-select">
+        <option value="light">Светлая</option>
+        <option value="dark">Тёмная</option>
+      </select>
+      <label>Основной цвет:</label>
+      <div id="color-palette" style="display:flex; gap:8px; margin:6px 0;"></div>
+      <input type="color" id="custom-color" style="margin-top:6px;">
+      <button id="save-theme-btn">Сохранить оформление</button>
+
+      <h3>Зарплатные параметры</h3>
+      <label>Оклад:</label>
+      <input type="number" id="salary-salary" placeholder="Оклад, руб.">
+      <label>Аванс:</label>
+      <input type="number" id="salary-advance" placeholder="Аванс, руб.">
+      <label>Налог (%):</label>
+      <input type="number" id="salary-tax" placeholder="13">
+      <button id="save-salary-btn">Сохранить ЗП-настройки</button>
+
+      <h3>Учёт смен</h3>
+      <label>Длительность одной смены (часов):</label>
+      <input type="number" id="shift-hours" min="1" step="1" value="8">
+      <button id="save-shift-btn">Сохранить смену</button>
+      <button id="clear-shift-stats-btn">Сбросить статистику смен</button>
     </section>
   </main>
 
